@@ -27,3 +27,13 @@ install requirements.txt
 ```sh
 pip install -r requirements.txt
 ```
+
+## Ray local server
+Start local ray server
+```sh
+ray start --head
+```
+Stop ray server
+```sh
+ray stop
+```
