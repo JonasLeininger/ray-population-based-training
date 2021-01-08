@@ -14,7 +14,7 @@ def main():
 
     analysis = tune.run(
         SimpleTrainer,
-        stop={"training_iteration": 180},
+        stop={"training_iteration": 10},
         config={
             "theta": np.array([0.9, 0.9]),
             "h": np.array([1.,0.]),
@@ -23,6 +23,8 @@ def main():
         progress_reporter=reporter
     )
     print('best config: ', analysis.get_best_config(metric="score", mode="max"))
+    best_config = analysis.get_best_config(metric="score", mode="max")
+    print(best_config)
 
 
 if __name__ == "__main__":

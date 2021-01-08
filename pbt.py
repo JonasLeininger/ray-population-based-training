@@ -1,5 +1,11 @@
 import numpy as np
 
+from bokeh.plotting import figure, show, output_notebook
+from bokeh.models import (ColorBar,
+                          FixedTicker, 
+                          LinearColorMapper, 
+                          PrintfTickFormatter)
+
 from trainable_simple import SimpleTrainer
 
 def main():
@@ -21,13 +27,19 @@ def main():
     }
     l_config = [config1, config2]
 
-    result_trainers = run(200, config_list=l_config)
+    trainers, l_scores_pbt, l_parameters_pbt = run(200, config_list=l_config)
+    trainers, l_scores_exploit, l_parameters_exploit = run(200, config_list=l_config, explore=False)
+    trainers, l_scores_explore, l_parameters_explore = run(200, config_list=l_config, exploit=False)
+    trainers, l_scores_grid, l_parameters_grid = run(200, config_list=l_config, exploit=False, explore=False)
+    print("pbt scores: ", l_scores_pbt[-1])
+    print("exploit scores: ", l_scores_exploit[-1])
+    print("explore scores: ", l_scores_explore[-1])
+    print("grid scores: ", l_scores_grid[-1])
+    plot_heatmap(l_parameters_pbt)
 
 def run(steps, config_list, explore=True, exploit=True):
     l_scores = []
     l_parameters = []
-    arr_score = np.zeros((2, 1))
-    arr_thetas = np.zeros((2, 2))
 
     trainers = [
         SimpleTrainer(config=config_list[0]),
@@ -35,21 +47,18 @@ def run(steps, config_list, explore=True, exploit=True):
         ]
 
     for step in range(steps):
-        print(step)
+        arr_score = np.zeros((2, 1))
+        arr_thetas = np.zeros((2, 2))
         for trainer in trainers:
             result = trainer.step()
-            arr_score[result["id"]] = np.copy(result["score"])
-            arr_thetas[result["id"]] = np.copy(result["theta"])
+            arr_score[result["id"]] = result["score"]
+            arr_thetas[result["id"]] = result["theta"]
         
         l_scores.append(arr_score)
         l_parameters.append(arr_thetas)
 
         best_trainer_id = np.argmax(arr_score)
-        print("best trainer id", best_trainer_id)
-        print("scores", arr_score)
         best_params = np.copy(arr_thetas[best_trainer_id])
-        print("thetas ", arr_thetas)
-        print("best thetas ", best_params)
 
         if step % 10 == 0 and step > 0:
             for trainer in trainers:
@@ -60,12 +69,48 @@ def run(steps, config_list, explore=True, exploit=True):
                 elif explore and not exploit:
                     trainer.explore()
                 elif not explore and exploit:
-                    trainer.exploit()
+                    trainer.exploit(best_trainer_id, best_params)
                 else:
                     pass
     
     return trainers, l_scores, l_parameters
 
+def plot_heatmap(params):
+    params = np.array(params)
+    trainer1 = params[...,0, :]
+    trainer2 = params[...,1, :]
+
+    N = 500
+    x = np.linspace(0, 1, N)
+    y = np.linspace(0, 1, N)
+    xx, yy = np.meshgrid(x, y)
+    d = 1.2 - xx**2 - yy**2
+
+    mapper = LinearColorMapper(palette='Viridis256', low=-0.5, high=1.2)
+
+    p = figure(x_range=(0, 1), y_range=(0, 1),
+            tooltips=[("theta_x", "$x"), ("theta_y", "$y"), ("value", "@image")])
+    p.xaxis.axis_label = 'theta_x'
+    p.yaxis.axis_label = 'theta_y'
+    # must give a vector of image data for image parameter
+    p.image(image=[d], x=0, y=0, dw=1., dh=1., 
+            palette='Viridis256'
+        )
+
+    levels = np.linspace(-0.5, 1.2, 12)
+    color_bar = ColorBar(color_mapper=mapper, 
+                        major_label_text_font_size="8pt",
+                        ticker=FixedTicker(ticks=levels),
+                        formatter=PrintfTickFormatter(format='%.2f'),
+                        label_standoff=6, 
+                        border_line_color=None, 
+                        location=(0, 0))
+
+    p.circle(trainer1[..., 0],trainer1[..., 1], size=2, color="black", alpha=0.5)
+    p.circle(trainer2[..., 0],trainer2[..., 1], size=2, color="red", alpha=0.5)
+    p.add_layout(color_bar, 'right')
+
+    show(p)
 
 if __name__ == "__main__":
     main()

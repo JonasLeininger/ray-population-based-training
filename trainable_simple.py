@@ -33,9 +33,5 @@ class SimpleTrainer(tune.Trainable):
     def exploit(self, best_trainer_id, params):
         if best_trainer_id != self.id:
             self.theta = np.copy(params)
-            if self.use_logger:
-                self.logger.info("Inherited optimal weights from Worker-{}".format(best_trainer_id))
-            else:
-                print("Worker-{} Inherited optimal weights from Worker-{}".format(self.id, best_trainer_id))
             return True
         return False
