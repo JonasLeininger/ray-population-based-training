@@ -5,6 +5,7 @@ from bokeh.models import (ColorBar,
                           FixedTicker, 
                           LinearColorMapper, 
                           PrintfTickFormatter)
+from bokeh.layouts import gridplot
 
 from trainable_simple import SimpleTrainer
 
@@ -35,7 +36,14 @@ def main():
     print("exploit scores: ", l_scores_exploit[-1])
     print("explore scores: ", l_scores_explore[-1])
     print("grid scores: ", l_scores_grid[-1])
-    plot_heatmap(l_parameters_pbt)
+    p_pbt = plot_heatmap(l_parameters_pbt)
+    p_exploit = plot_heatmap(l_parameters_exploit)
+    p_explore = plot_heatmap(l_parameters_explore)
+    p_grid = plot_heatmap(l_parameters_grid)
+
+    grid = gridplot([[p_pbt, p_exploit], [p_explore, p_grid]])
+    show(grid)
+
 
 def run(steps, config_list, explore=True, exploit=True):
     l_scores = []
@@ -110,7 +118,8 @@ def plot_heatmap(params):
     p.circle(trainer2[..., 0],trainer2[..., 1], size=2, color="red", alpha=0.5)
     p.add_layout(color_bar, 'right')
 
-    show(p)
+    # show(p)
+    return p
 
 if __name__ == "__main__":
     main()
