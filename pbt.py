@@ -41,7 +41,12 @@ def main():
     p_explore = plot_heatmap(l_parameters_explore)
     p_grid = plot_heatmap(l_parameters_grid)
 
-    grid = gridplot([[p_pbt, p_exploit], [p_explore, p_grid]])
+    p_score_pbt = plot_score(l_scores_pbt)
+    p_score_exploit = plot_score(l_scores_exploit)
+    p_score_explore = plot_score(l_scores_explore)
+    p_score_grid = plot_score(l_scores_grid)
+
+    grid = gridplot([[p_pbt, p_exploit, p_explore, p_grid], [p_score_pbt, p_score_exploit, p_score_explore, p_score_grid]])
     show(grid)
 
 
@@ -119,6 +124,20 @@ def plot_heatmap(params):
     p.add_layout(color_bar, 'right')
 
     # show(p)
+    return p
+
+def plot_score(scores):
+    scores = np.array(scores)
+    scores1 = scores[...,0, :]
+    scores2 = scores[...,1, :]
+    N = 200
+    steps = np.linspace(0, 200, N)
+    p = figure(x_range=(0, 200), y_range=(0, 1.2))
+    p.xaxis.axis_label = 'steps'
+    p.yaxis.axis_label = 'score'
+    p.circle(steps, scores1[..., 0], size=2, color="black", alpha=0.5)
+    p.circle(steps, scores2[..., 0], size=2, color="red", alpha=0.5)
+
     return p
 
 if __name__ == "__main__":
