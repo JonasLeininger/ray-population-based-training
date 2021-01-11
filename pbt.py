@@ -32,10 +32,7 @@ def main():
     trainers, l_scores_exploit, l_parameters_exploit = run(200, config_list=l_config, explore=False)
     trainers, l_scores_explore, l_parameters_explore = run(200, config_list=l_config, exploit=False)
     trainers, l_scores_grid, l_parameters_grid = run(200, config_list=l_config, exploit=False, explore=False)
-    print("pbt scores: ", l_scores_pbt[-1])
-    print("exploit scores: ", l_scores_exploit[-1])
-    print("explore scores: ", l_scores_explore[-1])
-    print("grid scores: ", l_scores_grid[-1])
+    
     p_pbt = plot_heatmap(l_parameters_pbt)
     p_exploit = plot_heatmap(l_parameters_exploit)
     p_explore = plot_heatmap(l_parameters_explore)
