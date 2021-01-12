@@ -45,10 +45,10 @@ class BipedalTrainer(tune.Trainable):
             self.experience_count += 1
             self.env.render(mode='rgb_array')
             actions = self.agent.act(self.obs)
-            next_obs, rewards, dones, info = self.env.step(actions)
+            next_obs, rewards, dones, info = self.env.step(actions.flatten())
             self.score += rewards
 
-            actions = np.expand_dims(actions, axis=0)
+            # actions = np.expand_dims(actions, axis=0)
             rewards = np.array((rewards,))
             rewards = np.expand_dims(rewards, axis=0)
             next_obs = np.expand_dims(next_obs, axis=0)

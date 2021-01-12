@@ -31,9 +31,19 @@ class BipedalAgent():
         self.tau = config["agent_tau"]
         self.device = config["device"]
 
-    def act(self, obs):
-        actions = np.random.random((4,))
-        return actions
+    def act(self, observation, add_noise=True):
+        obs = torch.tensor(observation, dtype=torch.float, device=self.device)
+        self.actor_local.eval()
+        with torch.no_grad():
+            action = self.actor_local(obs)
+            action = action.cpu().data.numpy()
+        self.actor_local.train()
+        
+        if add_noise:
+                noise = self.noise.sample()
+                action += noise
+        
+        return np.clip(action, -1, 1)
     
     def learn(self, exp, weights=None, weighted_loss=False):
         return 0

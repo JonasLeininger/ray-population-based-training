@@ -9,6 +9,7 @@ class DDPGActor(nn.Module):
 		self.linear1 = nn.Linear(config["env_obs_dim"], 400)
 		self.linear2 = nn.Linear(400, 300)
 		self.linear3 = nn.Linear(300, config["action_dim"])
+		self.to(config["device"])
 
 	def forward(self, x):
 		x = F.relu(self.linear1(x))
