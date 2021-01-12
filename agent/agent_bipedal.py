@@ -1,10 +1,13 @@
 import numpy as np
 
 from agent.ornstein_uhlenbeck_noise import Noise
+from model.actor import DDPGActor
 
 class BipedalAgent():
 
     def __init__(self, config):
+        self.actor_local = DDPGActor(config)
+        self.actor_target = DDPGActor(config)
         self.noise = Noise(
             config["action_dim"],
             np.asarray(config["noise_mu"]),

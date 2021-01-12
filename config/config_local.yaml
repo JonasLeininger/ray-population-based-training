@@ -23,9 +23,9 @@ video: False
 sync_results: False
 num_parallel_instances: 10
 physics_engine: mujoco
-env_obs_dim: [1, 84, 84]
+env_obs_dim: [24]
 human_view_dim: [200, 200]
-env_camera_number: 3
+env_camera_number: 0
 env_time_sleep: 0.0042
 action_dim: 4
 device: cuda
@@ -41,13 +41,11 @@ entropy_beta: 0.02
 cloud_folder: "depth_cam/"
 experiment_epoch: 125
 experiment_name: "weights"
-env_config: {max_steps_in_environment: 600, 
-    num_parallel_instances: 10,
-    physics_engine: mujoco,
+env_config: {max_steps_in_environment: 600,
     render_human_view: False,
     video: False,
     env_obs_dim: [1, 84, 84],
     human_view_dim: [200, 200],
     env_camera_number: 3,
     env_time_sleep: 0.0042,
-    action_dim: 7}
+    action_dim: 4}
