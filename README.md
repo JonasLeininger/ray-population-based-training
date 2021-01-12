@@ -1,5 +1,5 @@
 # ray-population-based-training
-Tutorial for Population Based Training, PBT, with ray[tune] and PyTorch
+Tutorial for Population Based Training, PBT, with ray[tune], ray[rllib] and PyTorch
 
 Paper on PBT by Deepmind https://arxiv.org/abs/1711.09846
 
