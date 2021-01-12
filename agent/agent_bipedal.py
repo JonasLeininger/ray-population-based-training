@@ -94,3 +94,26 @@ class BipedalAgent():
             target_model.parameters(), local_model.parameters()
         ):
             target_param.data.copy_(local_param.data)
+
+    def save_checkpoint_for_tune(self, checkpoint_path):
+        torch.save(
+            {
+                "actor_model_state_dict": self.actor_target.state_dict(),
+                "actor_optimizer_state_dict": self.optimizer_actor.state_dict(),
+                "critic_model_state_dict": self.critic_target.state_dict(),
+                "critic_optimizer_state_dict": self.optimizer_critic.state_dict(),
+            },
+            checkpoint_path,
+        )
+
+    def load_checkpoint_for_tune(self, checkpoint_path):
+        checkpoint = torch.load(checkpoint_path)
+        self.actor_target.load_state_dict(checkpoint["actor_model_state_dict"])
+        self.optimizer_actor.load_state_dict(checkpoint["actor_optimizer_state_dict"])
+        self.actor_local.load_state_dict(checkpoint["actor_model_state_dict"])
+        self.optimizer_actor.load_state_dict(checkpoint["actor_optimizer_state_dict"])
+
+        self.critic_target.load_state_dict(checkpoint["critic_model_state_dict"])
+        self.optimizer_critic.load_state_dict(checkpoint["critic_optimizer_state_dict"])
+        self.critic_local.load_state_dict(checkpoint["critic_model_state_dict"])
+        self.optimizer_critic.load_state_dict(checkpoint["critic_optimizer_state_dict"])
