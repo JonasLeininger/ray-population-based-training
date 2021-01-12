@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from agent.ornstein_uhlenbeck_noise import Noise
 from model.actor import DDPGActor
@@ -20,6 +21,8 @@ class BipedalAgent():
             lr=config["learning_rate"],
             weight_decay=config["optimizer_critic_weight_decay"],
         )
+        self.hard_update(self.critic_local, self.critic_target)
+        self.hard_update(self.actor_local, self.actor_target)
 
         self.noise = Noise(
             config["action_dim"],
@@ -45,5 +48,49 @@ class BipedalAgent():
         
         return np.clip(action, -1, 1)
     
-    def learn(self, exp, weights=None, weighted_loss=False):
-        return 0
+    def learn(self, experience, weights=None, weighted_loss=False):
+        states, actions, rewards, next_states, dones = experience
+        target_actions = self.actor_target(next_states)
+        q_targets_next = self.critic_target(next_states, target_actions)
+        q_targets = rewards + (self.gamma * q_targets_next * (1 - dones))
+        q_expected = self.critic_local(states, actions)
+        delta = torch.abs(q_expected - q_targets)
+
+        if not weighted_loss:
+            self.critic_loss = F.mse_loss(q_expected, q_targets)
+        else:
+            weights = torch.from_numpy(weights).float().to(self.device)
+            loss = F.mse_loss(q_expected, q_targets)
+            w_loss = loss * weights
+            self.critic_loss = w_loss.mean()
+
+        self.optimizer_critic.zero_grad()
+        self.critic_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), 1)
+        self.optimizer_critic.step()
+
+        actions_pred = self.actor_local(states)
+        self.actor_loss = -self.critic_local(states, actions_pred).mean()
+
+        self.optimizer_actor.zero_grad()
+        self.actor_loss.backward()
+        self.optimizer_actor.step()
+
+        self.soft_update(self.critic_local, self.critic_target)
+        self.soft_update(self.actor_local, self.actor_target)
+
+        return delta.clone().cpu().data.numpy()
+    
+    def soft_update(self, local_model, target_model):
+        for target_param, local_param in zip(
+            target_model.parameters(), local_model.parameters()
+        ):
+            target_param.data.copy_(
+                self.tau * local_param.data + (1.0 - self.tau) * target_param.data
+            )
+
+    def hard_update(self, local_model, target_model):
+        for target_param, local_param in zip(
+            target_model.parameters(), local_model.parameters()
+        ):
+            target_param.data.copy_(local_param.data)

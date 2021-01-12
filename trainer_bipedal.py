@@ -76,7 +76,7 @@ class BipedalTrainer(tune.Trainable):
             absolute_errors = self.agent.learn(
                 experience, weights=b_ISWeights, weighted_loss=True
             )
-            # self.per.batch_updates(b_idx, absolute_errors)
+            self.per.batch_updates(b_idx, absolute_errors)
 
 
 if __name__ == "__main__":
