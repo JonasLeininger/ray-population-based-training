@@ -3,6 +3,7 @@ import torch
 
 from agent.ornstein_uhlenbeck_noise import Noise
 from model.actor import DDPGActor
+from model.critic import DDPGCritic
 
 class BipedalAgent():
 
@@ -11,6 +12,13 @@ class BipedalAgent():
         self.actor_target = DDPGActor(config)
         self.optimizer_actor = torch.optim.Adam(
             self.actor_local.parameters(), lr=config["learning_rate"]
+        )
+        self.critic_local = DDPGCritic(config)
+        self.critic_target = DDPGCritic(config)
+        self.optimizer_critic = torch.optim.Adam(
+            self.critic_local.parameters(),
+            lr=config["learning_rate"],
+            weight_decay=config["optimizer_critic_weight_decay"],
         )
 
         self.noise = Noise(
