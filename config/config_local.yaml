@@ -5,12 +5,12 @@ replay_buffer_batch_size: 524
 memory_learning_start: 500
 agent_learn_every_x_steps: 20
 agent_learn_num_iterations: 10
-success_threshold: 300
+success_threshold: 300.0
 # Neural Network params
-learning_rate: 0.001
+learning_rate: 0.0001
 actor_critic_weight_init_from: -0.0003
 actor_critic_weight_init_to: 0.0003
-optimizer_critic_weight_decay: 0.0000
+optimizer_critic_weight_decay: 0.01
 noise_mu: [0.0, 0.0, 0.0, 0.0]
 agent_gamma: 0.95
 agent_tau: 0.01

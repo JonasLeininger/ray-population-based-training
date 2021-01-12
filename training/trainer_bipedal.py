@@ -1,6 +1,7 @@
 import numpy as np
 from ray import tune
 import gym
+from torch.utils.tensorboard import SummaryWriter
 
 from utils.annotations import override
 from config.config import Config
@@ -28,9 +29,12 @@ class BipedalTrainer(tune.Trainable):
     
     @override(tune.Trainable)
     def step(self):
+        self.writer = SummaryWriter(log_dir=self.logdir)
         self._execute_iteration()
         self.rewards.append(self.reward)
+        self._weights_for_tensorboard_log(self.train_count)
         self._reward_bookkeeping()
+        
 
         return {"reward": self.reward, "mean_rewards": self.mean_rewards, "done": self.done}
     
@@ -95,6 +99,23 @@ class BipedalTrainer(tune.Trainable):
             )
             self.per.batch_updates(b_idx, absolute_errors)
 
+    def _weights_for_tensorboard_log(self, train_count):
+        for name, param in self.agent.critic_local.named_parameters():
+            self.writer.add_histogram(
+                "critic-local" + name, param.clone().cpu().data.numpy(), train_count
+            )
+        for name, param in self.agent.actor_local.named_parameters():
+            self.writer.add_histogram(
+                "actor-local" + name, param.clone().cpu().data.numpy(), train_count
+            )
+        for name, param in self.agent.critic_target.named_parameters():
+            self.writer.add_histogram(
+                "critic-target" + name, param.clone().cpu().data.numpy(), train_count
+            )
+        for name, param in self.agent.actor_target.named_parameters():
+            self.writer.add_histogram(
+                "actor-target" + name, param.clone().cpu().data.numpy(), train_count
+            )
 
 if __name__ == "__main__":
     config = Config(config_file="config/config_local.yaml").config
