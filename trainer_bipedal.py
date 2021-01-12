@@ -18,16 +18,34 @@ class BipedalTrainer(tune.Trainable):
         self.per = PrioritizedExperienceReplay(
             capacity=config["replay_buffer_memory_size"]
             )
+        self.done = False
         self.dones = np.array(0)
         self.experience_count = 0
         self.train_count = 0
-        self.score = 0
+        self.reward = 0
+        self.rewards = []
+        self.mean_rewards = []
     
     @override(tune.Trainable)
     def step(self):
         self._execute_iteration()
-        return {"reward": self.score, "done": self.dones}
+        self.rewards.append(self.reward)
+        self._reward_bookkeeping()
+
+        return {"reward": self.reward, "mean_rewards": self.mean_rewards, "done": self.done}
     
+    def _reward_bookkeeping(self):
+        if self.train_count >= 50:
+            self.mean_rewards = np.mean(self.rewards[-50:])
+        else:
+            self.mean_rewards = np.mean(self.rewards)
+
+        if self.mean_rewards >= self.config["success_threshold"]:
+            self.done = True
+
+        if self.train_count == self.config["max_training_iterations"]:
+            self.done = True
+
     def _execute_iteration(self):
         self._reset_env()
         self._run_environment_episode()
@@ -38,7 +56,7 @@ class BipedalTrainer(tune.Trainable):
         self.obs = np.expand_dims(self.obs, axis=0)
         self.timestep_count_env = 0
         self.dones = np.array(0)
-        self.score = 0
+        self.reward = 0
 
     def _run_environment_episode(self):
         while not np.any(self.dones.astype(dtype=bool)):
@@ -46,9 +64,8 @@ class BipedalTrainer(tune.Trainable):
             self.env.render(mode='rgb_array')
             actions = self.agent.act(self.obs)
             next_obs, rewards, dones, info = self.env.step(actions.flatten())
-            self.score += rewards
+            self.reward += rewards
 
-            # actions = np.expand_dims(actions, axis=0)
             rewards = np.array((rewards,))
             rewards = np.expand_dims(rewards, axis=0)
             next_obs = np.expand_dims(next_obs, axis=0)
