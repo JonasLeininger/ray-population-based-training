@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from agent.ornstein_uhlenbeck_noise import Noise
 from model.actor import DDPGActor
@@ -8,6 +9,10 @@ class BipedalAgent():
     def __init__(self, config):
         self.actor_local = DDPGActor(config)
         self.actor_target = DDPGActor(config)
+        self.optimizer_actor = torch.optim.Adam(
+            self.actor_local.parameters(), lr=config["learning_rate"]
+        )
+
         self.noise = Noise(
             config["action_dim"],
             np.asarray(config["noise_mu"]),

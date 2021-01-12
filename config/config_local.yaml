@@ -23,7 +23,7 @@ video: False
 sync_results: False
 num_parallel_instances: 10
 physics_engine: mujoco
-env_obs_dim: [24]
+env_obs_dim: 24
 human_view_dim: [200, 200]
 env_camera_number: 0
 env_time_sleep: 0.0042
