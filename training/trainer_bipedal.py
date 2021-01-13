@@ -116,6 +116,18 @@ class BipedalTrainer(tune.Trainable):
             self.writer.add_histogram(
                 "actor-target" + name, param.clone().cpu().data.numpy(), train_count
             )
+    
+    @override(tune.Trainable)
+    def _save(self, checkpoint_path):
+        print(checkpoint_path)
+        checkpoint_path_model_name = os.path.join(checkpoint_path, "model.pth")
+        self.agent.save_checkpoint_for_tune(checkpoint_path_model_name)
+        return checkpoint_path_model_name
+
+    @override(tune.Trainable)
+    def _restore(self, checkpoint_path):
+        self.agent.load_checkpoint_for_tune(checkpoint_path)
+        print(checkpoint_path)
 
 if __name__ == "__main__":
     config = Config(config_file="config/config_local.yaml").config
