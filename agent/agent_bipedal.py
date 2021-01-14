@@ -41,11 +41,9 @@ class BipedalAgent():
             action = self.actor_local(obs)
             action = action.cpu().data.numpy()
         self.actor_local.train()
-        
         if add_noise:
                 noise = self.noise.sample()
                 action += noise
-        
         return np.clip(action, -1, 1)
     
     def learn(self, experience, weights=None, weighted_loss=False):

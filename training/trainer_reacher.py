@@ -1,22 +1,23 @@
 import os
 import numpy as np
 from ray import tune
-import gym
+
 from torch.utils.tensorboard import SummaryWriter
+from unityagents import UnityEnvironment
 
 from utils.annotations import override
 from config.config import Config
 from agent.agent_bipedal import  BipedalAgent
 from model.prioritized_experience_replay_buffer import PrioritizedExperienceReplay
 
-class BipedalTrainer(tune.Trainable):
-    _name = "BipedalTrainer"
+class ReacherTrainer(tune.Trainable):
+    _name = "ReacherTrainer"
 
     @override(tune.Trainable)
     def setup(self, config):
-        self.env = gym.make('BipedalWalker-v3')
+        self.env = UnityEnvironment(file_name="envs/Reacher_Linux/Reacher.x86_64")
+        self.init_env()
         self.agent = BipedalAgent(config)
-        self.obs = self.env.reset()
         self.per = PrioritizedExperienceReplay(
             capacity=config["replay_buffer_memory_size"]
             )
@@ -28,6 +29,14 @@ class BipedalTrainer(tune.Trainable):
         self.rewards = []
         self.mean_rewards = []
     
+    def init_env(self):
+        self.brain_name = self.env.brain_names[0]
+        self.brain = self.env.brains[self.brain_name]
+        self.env_info = self.env.reset(train_mode=True)[self.brain_name]
+        self.obs = self.env_info.vector_observations
+        self.state_dim = self.obs.shape[1]
+        self.action_dim = self.brain.vector_action_space_size
+
     @override(tune.Trainable)
     def step(self):
         self.writer = SummaryWriter(log_dir=self.logdir)
@@ -36,7 +45,6 @@ class BipedalTrainer(tune.Trainable):
         self._weights_for_tensorboard_log(self.train_count)
         self._reward_bookkeeping()
         
-
         return {"reward": self.reward, "mean_rewards": self.mean_rewards, "exp": self.experience_count}
     
     def _reward_bookkeeping(self):
@@ -57,16 +65,15 @@ class BipedalTrainer(tune.Trainable):
         self.train_count += 1
 
     def _reset_env(self):
-        self.obs = self.env.reset()
-        self.obs = np.expand_dims(self.obs, axis=0)
+        self.env_info = self.env.reset(train_mode=True)[self.brain_name]
+        self.obs = self.env_info.vector_observations
         self.timestep_count_env = 0
         self.dones = np.array(0)
-        self.reward = 0
+        self.reward = np.zeros((20, 1))
 
     def _run_environment_episode(self):
         while not np.any(self.dones.astype(dtype=bool)):
             self.experience_count += 1
-            self.env.render(mode='rgb_array')
             if self.experience_count <= 20000:
                 self.agent.noise.theta = 0.5
                 self.agent.noise.sigma = 0.9
@@ -77,14 +84,13 @@ class BipedalTrainer(tune.Trainable):
                 self.agent.noise.theta = 0.05
                 self.agent.noise.sigma = 0.05
             actions = self.agent.act(self.obs)
-            next_obs, rewards, dones, info = self.env.step(actions.flatten())
-            self.reward += rewards
+            self.env_info = self.env.step(actions)[self.brain_name]
+            next_obs = self.env_info.vector_observations
+            rewards = self.env_info.rewards
+            rewards = np.array(rewards).reshape((20, 1))
+            dones = np.array(self.env_info.local_done).reshape((20, 1))
+            self.reward = np.add(self.reward, rewards)
 
-            rewards = np.array((rewards,))
-            rewards = np.expand_dims(rewards, axis=0)
-            next_obs = np.expand_dims(next_obs, axis=0)
-            dones = np.array((dones,))
-            dones = np.expand_dims(dones, axis=0)
             experience = self.obs, actions, rewards, next_obs, dones
             self.per.store(experience)
             self._learn(self.timestep_count_env)
@@ -141,7 +147,7 @@ class BipedalTrainer(tune.Trainable):
 
 if __name__ == "__main__":
     config = Config(config_file="config/config_local.yaml").config
-    trainer = BipedalTrainer(config=config)
+    trainer = ReacherTrainer(config=config)
     for i in range(10):
         result_dict = trainer.step()
         print(result_dict)
