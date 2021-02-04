@@ -15,7 +15,7 @@ class ReacherTrainer(tune.Trainable):
 
     @override(tune.Trainable)
     def setup(self, config):
-        self.env = UnityEnvironment(file_name="envs/Reacher_Linux/Reacher.x86_64")
+        self.env = UnityEnvironment(file_name=config["path_to_env_novis"])
         self.init_env()
         self.agent = BipedalAgent(config)
         self.per = PrioritizedExperienceReplay(
@@ -28,6 +28,8 @@ class ReacherTrainer(tune.Trainable):
         self.reward = 0
         self.rewards = []
         self.mean_rewards = []
+        self.score = 0
+        self.mean_of_mean = 0
     
     def init_env(self):
         self.brain_name = self.env.brain_names[0]
@@ -45,15 +47,18 @@ class ReacherTrainer(tune.Trainable):
         self._weights_for_tensorboard_log(self.train_count)
         self._reward_bookkeeping()
         
-        return {"reward": self.reward, "mean_rewards": self.mean_rewards, "exp": self.experience_count}
+        return {"score": self.score, "mean_of_mean": self.mean_of_mean, "exp": self.experience_count, "done": self.done}
     
     def _reward_bookkeeping(self):
-        if self.train_count >= 50:
-            self.mean_rewards = np.mean(self.rewards[-50:])
-        else:
-            self.mean_rewards = np.mean(self.rewards)
+        self.score = np.mean(self.reward)
+        self.mean_rewards.append(self.score)
 
-        if self.mean_rewards >= self.config["success_threshold"]:
+        if self.train_count >= 50:
+            self.mean_of_mean = np.mean(self.mean_rewards[-50:])
+        else:
+            self.mean_of_mean = np.mean(self.reward)
+
+        if self.mean_of_mean >= self.config["success_threshold"]:
             self.done = True
 
         if self.train_count == self.config["max_training_iterations"]:
@@ -73,16 +78,7 @@ class ReacherTrainer(tune.Trainable):
 
     def _run_environment_episode(self):
         while not np.any(self.dones.astype(dtype=bool)):
-            self.experience_count += 1
-            if self.experience_count <= 20000:
-                self.agent.noise.theta = 0.5
-                self.agent.noise.sigma = 0.9
-            elif self.experience_count <=50000:
-                self.agent.noise.theta = 0.3
-                self.agent.noise.sigma = 0.5
-            else:
-                self.agent.noise.theta = 0.05
-                self.agent.noise.sigma = 0.05
+            self.experience_count += 1 * self.obs.shape[0]
             actions = self.agent.act(self.obs)
             self.env_info = self.env.step(actions)[self.brain_name]
             next_obs = self.env_info.vector_observations

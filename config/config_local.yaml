@@ -1,11 +1,11 @@
 replay_buffer_memory_size: 200000
 replay_buffer_batch_size: 128
-max_training_iterations: 5000
-replay_buffer_batch_size: 524
-memory_learning_start: 10000
-agent_learn_every_x_steps: 20
+max_training_iterations: 300
+replay_buffer_batch_size: 128
+memory_learning_start: 40000
+agent_learn_every_x_steps: 50
 agent_learn_num_iterations: 10
-success_threshold: 300.0
+success_threshold: 30.0
 # Neural Network params
 learning_rate: 0.001
 actor_critic_weight_init_from: -0.0003
@@ -14,8 +14,11 @@ optimizer_critic_weight_decay: 0.0000
 noise_mu: [0.0, 0.0, 0.0, 0.0]
 agent_gamma: 0.95
 agent_tau: 0.01
-noise_theta: 0.3
-noise_sigma: 0.7
+noise_theta: 0.15
+noise_sigma: 0.25
+# path to env
+path_to_env_vis: [path_to_envs]/Reacher_Linux/Reacher.x86_64
+path_to_env_novis: [path_to_envs]/Reacher_Linux_NoVis/Reacher.x86_64
 # these are more or less fixed parameters
 local_tune_log_dir: tune_logs
 render_human_view: False
