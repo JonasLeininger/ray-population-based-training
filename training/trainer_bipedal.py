@@ -140,7 +140,7 @@ class BipedalTrainer(tune.Trainable):
         print(checkpoint_path)
 
 if __name__ == "__main__":
-    config = Config(config_file="config/config_local.yaml").config
+    config = Config(config_file="config/config_bipedal.yaml").config
     trainer = BipedalTrainer(config=config)
     for i in range(10):
         result_dict = trainer.step()
